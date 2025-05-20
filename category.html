@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Категория — Мир кожи и автотканей</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="smoke-overlay"></div>
+
+  <header class="header">
+    <div class="container">
+      <h1 class="logo">Мир кожи и автотканей</h1>
+      <nav>
+        <ul class="nav">
+          <li><a href="index.html">Главная</a></li>
+          <li><a href="catalog.html">Категории</a></li>
+          <li><a href="#" id="nav-category" class="active">…</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section fade-up catalog-section">
+    <h2 id="category-title" class="section-title">Загрузка…</h2>
+    <div id="cards" class="cards"></div>
+  </section>
+
+  <!-- скрытая админ-панель -->
+  <div id="adminToolbar"
+       style="display:none; position:fixed; top:10px; right:10px; z-index:1001;">
+    <button onclick="openAdminMenu()" title="Панель администратора">⚙️</button>
+    <button onclick="logoutAdmin()"      title="Выйти из админки">🚪</button>
+  </div>
+
+  <div id="loginForm"
+       style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%);
+              background:#fff; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+              border-radius:8px; width:300px; z-index:1002;">
+    <strong>Админ-вход</strong>
+    <input id="adminPassword" type="password" placeholder="Пароль"
+           style="width:100%; margin:8px 0; padding:8px;"/>
+    <button onclick="checkPassword()" style="width:100%; padding:8px;">Войти</button>
+  </div>
+
+  <div id="adminMenu"
+       style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%);
+              background:#fff; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+              border-radius:8px; width:300px; z-index:1002;">
+    <h3>Админ-меню</h3>
+    <button onclick="openAdd()"        style="width:100%; margin:5px 0;">＋ Добавить товар</button>
+    <button onclick="openEditMode()"   style="width:100%; margin:5px 0;">✏️ Редактировать</button>
+    <button onclick="openDeleteMode()" style="width:100%; margin:5px 0;">🗑️ Удалить</button>
+    <button onclick="closeAdminMenu()" style="width:100%; margin:5px 0;">Закрыть</button>
+  </div>
+
+  <div id="adminForm"
+       style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%);
+              background:#fff; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+              border-radius:8px; width:300px; z-index:1002;">
+    <h3 id="formTitle">Добавить товар</h3>
+    <input id="prodTitle" type="text"   placeholder="Название"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <input id="prodDesc"  type="text"   placeholder="Описание"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <input id="prodImg"   type="text"   placeholder="URL картинки"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <input id="prodPrice" type="number" placeholder="Цена, ₸"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <button onclick="saveProduct()"
+            style="width:100%; margin:5px 0; padding:8px;">Сохранить</button>
+    <button onclick="closeAdminForm()"
+            style="width:100%; margin:5px 0; padding:8px;">Отмена</button>
+  </div>
+
+  <button id="addBtn"
+          title="Добавить товар"
+          onclick="openAdd()"
+          style="display:none; position:fixed; bottom:20px; right:20px;
+                 width:50px; height:50px; font-size:32px; border:none;
+                 border-radius:50%; background:var(--orange); color:var(--white);
+                 box-shadow:0 2px 6px rgba(0,0,0,0.2);">＋</button>
+
+  <div id="instruction"
+       style="display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%);
+              background:rgba(0,0,0,0.75); color:#fff; padding:10px 20px;
+              border-radius:5px; font-size:16px; z-index:1002;"></div>
+
+  <footer class="footer">
+    <p><a href="catalog.html" style="color:var(--orange);">← Назад к категориям</a></p>
+    <p>© 2025 Мир кожи и автотканей</p>
+  </footer>
+
+  <script>
+    const ADMIN_PW_ENC = 'YWRtaW4xMjM=';
+    const params = new URLSearchParams(location.search);
+    const slug   = params.get('type');
+
+    // категории для названия
+    const categories = JSON.parse(localStorage.getItem('categories')) || [];
+    const cat = categories.find(c=>c.slug===slug);
+    const categoryName = cat ? cat.title : slug;
+    document.getElementById('nav-category').textContent = categoryName;
+
+    const storageKey = 'products_' + slug;
+    let products = JSON.parse(localStorage.getItem(storageKey));
+    if(!products){
+      products = [];
+      localStorage.setItem(storageKey, JSON.stringify(products));
+    }
+
+    let adminMode=false, pendingOperation=null, editIndex=null;
+
+    function renderProducts(){
+      document.getElementById('category-title').textContent = 
+        products.length
+          ? `Изделия из ${categoryName}`
+          : `Нет товаров в категории «${categoryName}»`;
+      const c = document.getElementById('cards');
+      c.innerHTML = '';
+      products.forEach((p,i)=>{
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${p.img}" alt="${p.title}">
+          <div class="card-content">
+            <h3 class="card-title">${p.title}</h3>
+            <p class="card-text">${p.desc}</p>
+            <p class="card-price">
+              <span class="price-amount">${p.price.toLocaleString()}</span>
+              <span class="price-currency">₸</span>
+            </p>
+          </div>`;
+        if(adminMode && pendingOperation){
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', ()=>handleCardClick(i));
+        }
+        c.appendChild(card);
+      });
+    }
+
+    function handleCardClick(i){
+      if(pendingOperation==='edit')   startEditProduct(i);
+      if(pendingOperation==='delete') performDeleteProduct(i);
+    }
+
+    document.addEventListener('keydown', e=>{
+      if(e.altKey && e.code==='KeyA'){
+        e.preventDefault();
+        document.getElementById('loginForm').style.display = 'block';
+      }
+    });
+
+    function checkPassword(){
+      const pw = document.getElementById('adminPassword').value.trim();
+      if(pw===atob(ADMIN_PW_ENC)){
+        adminMode=true;
+        document.getElementById('adminToolbar').style.display = 'block';
+        document.getElementById('addBtn').style.display       = 'block';
+        document.getElementById('loginForm').style.display    = 'none';
+        renderProducts();
+      } else alert('Неверный пароль');
+    }
+
+    function openAdminMenu(){   document.getElementById('adminMenu').style.display = 'block'; }
+    function closeAdminMenu(){  document.getElementById('adminMenu').style.display = 'none'; }
+    function logoutAdmin(){
+      adminMode=false; pendingOperation=null; editIndex=null;
+      document.getElementById('adminToolbar').style.display = 'none';
+      document.getElementById('addBtn').style.display       = 'none';
+      closeAdminMenu(); closeAdminForm(); renderProducts();
+    }
+
+    function openAdd(){
+      pendingOperation=null; clearForm();
+      document.getElementById('formTitle').textContent = 'Добавить товар';
+      document.getElementById('adminForm').style.display = 'block';
+      closeAdminMenu(); hideInstruction();
+    }
+
+    function openEditMode(){
+      pendingOperation='edit'; closeAdminMenu();
+      showInstruction('Нажмите на товар для редактирования');
+      renderProducts();
+    }
+
+    function startEditProduct(i){
+      editIndex=i;
+      const p=products[i];
+      document.getElementById('prodTitle').value = p.title;
+      document.getElementById('prodDesc').value  = p.desc;
+      document.getElementById('prodImg').value   = p.img;
+      document.getElementById('prodPrice').value = p.price;
+      document.getElementById('formTitle').textContent = 'Редактировать товар';
+      document.getElementById('adminForm').style.display = 'block';
+      hideInstruction(); pendingOperation=null;
+    }
+
+    function openDeleteMode(){
+      pendingOperation='delete'; closeAdminMenu();
+      showInstruction('Нажмите на товар для удаления');
+      renderProducts();
+    }
+
+    function performDeleteProduct(i){
+      if(confirm(`Удалить «${products[i].title}»?`)){
+        products.splice(i,1);
+        localStorage.setItem(storageKey, JSON.stringify(products));
+        alert('Товар удалён'); renderProducts();
+      }
+      hideInstruction(); pendingOperation=null;
+    }
+
+    function saveProduct(){
+      const t   = document.getElementById('prodTitle').value.trim();
+      const d   = document.getElementById('prodDesc').value.trim();
+      const img = document.getElementById('prodImg').value.trim();
+      const pr  = parseInt(document.getElementById('prodPrice').value,10);
+      if(!t||!img||isNaN(pr)) return alert('Заполните все поля');
+      const entry = { title:t, desc:d, img:img, price:pr };
+      if(editIndex===null){
+        products.push(entry); alert('Товар добавлен');
+      } else {
+        products[editIndex]=entry; alert('Товар изменён'); editIndex=null;
+      }
+      localStorage.setItem(storageKey, JSON.stringify(products));
+      renderProducts(); closeAdminForm();
+    }
+
+    function closeAdminForm(){
+      document.getElementById('adminForm').style.display='none';
+      pendingOperation=null; hideInstruction();
+    }
+    function clearForm(){
+      ['prodTitle','prodDesc','prodImg','prodPrice'].forEach(id=>
+        document.getElementById(id).value=''
+      );
+    }
+    function showInstruction(txt){
+      const ins=document.getElementById('instruction');
+      ins.textContent=txt; ins.style.display='block';
+    }
+    function hideInstruction(){
+      document.getElementById('instruction').style.display='none';
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      renderProducts();
+      document.getElementById('nav-category').textContent = categoryName;
+    });
+  </script>
+</body>
+</html>

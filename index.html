@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Мир кожи и автотканей</title>
+  <!-- Подключаем наш CSS -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Стили для стрелки прокрутки -->
+  <style>
+    #scroll-arrow {
+      position: fixed;
+      right: 20px;
+      bottom: 100px; /* немного выше низа страницы */
+      width: 60px;  /* увеличенный размер */
+      height: 60px;
+      font-size: 3rem; /* крупнее */
+      color: var(--orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      animation: moveDown 2s ease-in-out infinite;
+    }
+    #scroll-arrow.up {
+      animation: moveUp 2s ease-in-out infinite;
+    }
+    @keyframes moveDown {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes moveUp {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Анимированная дымка справа -->
+  <div class="smoke-overlay"></div>
+
+  <!-- Стрелка прокрутки -->
+  <div id="scroll-arrow" class="down">↓</div>
+
+  <!-- Шапка сайта -->
+  <header class="header">
+    <div class="container">
+      <h1 class="logo">Мир кожи и автотканей</h1>
+      <nav>
+        <ul class="nav">
+          <li><a href="index.html" class="active">Главная</a></li>
+          <li><a href="catalog.html">Каталог</a></li>
+          <li><a href="#about">О нас</a></li>
+          <li><a href="#contact">Контакты</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero-секция с чек-листом -->
+  <section class="hero">
+    <div class="hero-content features-hero">
+      <h2>МИР КОЖИ И АВТОТКАНЕЙ</h2>
+      <ul class="features-list">
+        <li><span class="check-icon">✔</span> МАТЕРИАЛЫ ВЫСОКОГО КАЧЕСТВА ДЛЯ ПЕРЕТЯЖКИ САЛОНОВ И ПОТОЛКОВ АВТО</li>
+        <li><span class="check-icon">✔</span> КОЖА НАТУРАЛЬНАЯ, ИСКУССТВЕННАЯ</li>
+        <li><span class="check-icon">✔</span> ЭКО-КОЖА</li>
+        <li><span class="check-icon">✔</span> Меховое и кожаное сырьё</li>
+        <li><span class="check-icon">✔</span> Материалы для производства обуви</li>
+        <li><span class="check-icon">✔</span> Автомобильные ткани (обивка сидений, потолка и пр.)</li>
+        <li><span class="check-icon">✔</span> Швейная фурнитура, ремни безопасности и аксессуары для авто</li>
+      </ul>
+      <hr class="hero-divider">
+    </div>
+  </section>
+
+  <!-- Блок «Удобства» -->
+  <section id="amenities" class="section fade-up">
+    <h3>Удобства</h3>
+    <ul class="amenities-list">
+      <li>Оплата: банковские карты, наличные, безналичный расчёт по QR-коду</li>
+      <li>Доступная среда: пандус, доступный вход для людей с ограниченными возможностями</li>
+      <li>2ГИС: введите “Мир кожи и автотканей” для построения маршрута</li>
+      <li>Транспорт и парковка:
+        <ul>
+          <li>Ближайшая остановка: автобусный парк № 18 (примерно 700 м пешком)</li>
+          <li>На прилегающей территории около 15 парковочных мест</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Блок «О нас» -->
+  <section id="about" class="section fade-up">
+    <h3>О нас</h3>
+    <p>MirKozhi — команда профессионалов, поставляющая высококачественную кожу по оптовым и розничным ценам.</p>
+    <p>Режим работы: Пн–Пт 9:00–18:00, Сб–Вс 10:00–18:00</p>
+  </section>
+
+  <!-- Блок «Контакты» с иконками -->
+  <section id="contact" class="section fade-up">
+    <h3>Связаться с нами</h3>
+    <p>Email: <a href="mailto:info@MagazinMirKozhi.ru">info@MagazinMirKozhi.ru</a></p>
+    <p>Телефон: <a href="tel:+77784611309">+7 778 461 13 09</a></p>
+    <p>Instagram: <a href="https://www.instagram.com/magazinmirkozhi" target="_blank">@magazinmirkozhi</a></p>
+    <p>Где мы: 
+      <a href="https://go.2gis.com/Jp5qi" target="_blank">2GIS (Клик)</a> и 
+      <a href="https://yandex.kz/maps/-/CHvhYDkK" target="_blank">Яндекс.Карты (Клик)</a>
+    </p>
+  </section>
+
+  <!-- Подвал -->
+  <footer class="footer">
+    <p>© 2025 Мир кожи и автотканей. Все права защищены.</p>
+  </footer>
+
+  <script>
+    // Плавный скролл по якорям
+    document.documentElement.style.scrollBehavior = 'smooth';
+
+    // Скрипт для стрелки прокрутки
+    const arrow = document.getElementById('scroll-arrow');
+    arrow.addEventListener('click', () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (arrow.classList.contains('down')) {
+        window.scrollTo({ top: maxScroll, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollTop >= maxScroll - 10) {
+        arrow.classList.remove('down');
+        arrow.classList.add('up');
+        arrow.textContent = '↑';
+      } else {
+        arrow.classList.remove('up');
+        arrow.classList.add('down');
+        arrow.textContent = '↓';
+      }
+    });
+  </script>
+</body>
+</html>

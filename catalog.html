@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Каталог категорий — Мир кожи и автотканей</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="smoke-overlay"></div>
+
+  <header class="header">
+    <div class="container">
+      <h1 class="logo">Мир кожи и автотканей</h1>
+      <nav>
+        <ul class="nav">
+          <li><a href="index.html">Главная</a></li>
+          <li><a href="catalog.html" class="active">Категории</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="section fade-up catalog-section">
+    <h2 class="section-title">Категории продукции</h2>
+    <div id="cards" class="cards"></div>
+  </section>
+
+  <!-- скрытая админ-панель -->
+  <div id="adminToolbar"
+       style="display:none; position:fixed; top:10px; right:10px; z-index:1001;">
+    <button onclick="openAdminMenu()" title="Панель администратора">⚙️</button>
+    <button onclick="logoutAdmin()"      title="Выйти из админки">🚪</button>
+  </div>
+
+  <div id="loginForm"
+       style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%);
+              background:#fff; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+              border-radius:8px; width:300px; z-index:1002;">
+    <strong>Админ-вход</strong>
+    <input id="adminPassword" type="password" placeholder="Пароль"
+           style="width:100%; margin:8px 0; padding:8px;"/>
+    <button onclick="checkPassword()" style="width:100%; padding:8px;">Войти</button>
+  </div>
+
+  <div id="adminMenu"
+       style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%);
+              background:#fff; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+              border-radius:8px; width:300px; z-index:1002;">
+    <h3>Админ-меню</h3>
+    <button onclick="openAdd()"       style="width:100%; margin:5px 0;">＋ Добавить категорию</button>
+    <button onclick="openEditMode()"  style="width:100%; margin:5px 0;">✏️ Редактировать</button>
+    <button onclick="openDeleteMode()"style="width:100%; margin:5px 0;">🗑️ Удалить</button>
+    <button onclick="closeAdminMenu()"style="width:100%; margin:5px 0;">Закрыть</button>
+  </div>
+
+  <div id="adminForm"
+       style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%);
+              background:#fff; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+              border-radius:8px; width:300px; z-index:1002;">
+    <h3 id="formTitle">Добавить категорию</h3>
+    <input id="catTitle" type="text" placeholder="Название"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <input id="catSlug"  type="text" placeholder="Slug ( латиницей )"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <input id="catDesc"  type="text" placeholder="Описание"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <input id="catImg"   type="text" placeholder="URL картинки"
+           style="width:100%; margin:5px 0; padding:8px;"/>
+    <button onclick="saveCategory()"
+            style="width:100%; margin:5px 0; padding:8px;">Сохранить</button>
+    <button onclick="closeAdminForm()"
+            style="width:100%; margin:5px 0; padding:8px;">Отмена</button>
+  </div>
+
+  <button id="addBtn"
+          title="Добавить категорию"
+          onclick="openAdd()"
+          style="display:none; position:fixed; bottom:20px; right:20px;
+                 width:50px; height:50px; font-size:32px; border:none;
+                 border-radius:50%; background:var(--orange); color:var(--white);
+                 box-shadow:0 2px 6px rgba(0,0,0,0.2);">＋</button>
+
+  <div id="instruction"
+       style="display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%);
+              background:rgba(0,0,0,0.75); color:#fff; padding:10px 20px;
+              border-radius:5px; font-size:16px; z-index:1002;"></div>
+
+  <footer class="footer">
+    <p>© 2025 Мир кожи и автотканей. Все права защищены.</p>
+  </footer>
+
+  <script>
+    const ADMIN_PW_ENC = 'YWRtaW4xMjM='; // 'admin123'
+    const defaultCategories = [
+      { title:'Эко-кожа',         slug:'eco-leather',     desc:'Современный материал, устойчивый и экологичный.', img:'eco-leather.jpg' },
+      { title:'Натуральная кожа', slug:'natural-leather', desc:'Прочная, долговечная, премиального качества.',   img:'natural-leather.jpg' },
+      { title:'Фурнитура',        slug:'accessories',     desc:'Замки, кнопки, нитки, крепления и другое.',    img:'accessories.jpg' }
+    ];
+    let categories = JSON.parse(localStorage.getItem('categories')) || defaultCategories;
+    localStorage.setItem('categories', JSON.stringify(categories));
+
+    let adminMode = false, pendingOperation = null, editIndex = null;
+
+    function renderCategories(){
+      const c = document.getElementById('cards');
+      c.innerHTML = '';
+      categories.forEach((cat,i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${cat.img}" alt="${cat.title}">
+          <div class="card-content">
+            <h3 class="card-title">${cat.title}</h3>
+            <p class="card-text">${cat.desc}</p>
+          </div>`;
+        if(adminMode && pendingOperation){
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', ()=>handleCardClick(i));
+        } else if(!adminMode){
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', ()=> {
+            window.location.href = `category.html?type=${cat.slug}`;
+          });
+        }
+        c.appendChild(card);
+      });
+    }
+
+    function handleCardClick(i){
+      if(pendingOperation==='edit')   startEditCategory(i);
+      if(pendingOperation==='delete') performDeleteCategory(i);
+    }
+
+    document.addEventListener('keydown', e=>{
+      if(e.altKey && e.code==='KeyA'){
+        e.preventDefault();
+        document.getElementById('loginForm').style.display = 'block';
+      }
+    });
+
+    function checkPassword(){
+      const pw = document.getElementById('adminPassword').value.trim();
+      if(pw === atob(ADMIN_PW_ENC)){
+        adminMode = true;
+        document.getElementById('adminToolbar').style.display = 'block';
+        document.getElementById('addBtn').style.display       = 'block';
+        document.getElementById('loginForm').style.display    = 'none';
+        renderCategories();
+      } else alert('Неверный пароль');
+    }
+
+    function openAdminMenu(){
+      document.getElementById('adminMenu').style.display = 'block';
+    }
+    function closeAdminMenu(){
+      document.getElementById('adminMenu').style.display = 'none';
+    }
+
+    function logoutAdmin(){
+      adminMode = false; pendingOperation = null; editIndex = null;
+      document.getElementById('adminToolbar').style.display = 'none';
+      document.getElementById('addBtn').style.display       = 'none';
+      closeAdminMenu(); closeAdminForm(); renderCategories();
+    }
+
+    function openAdd(){
+      pendingOperation = null;
+      clearForm();
+      document.getElementById('formTitle').textContent   = 'Добавить категорию';
+      document.getElementById('adminForm').style.display = 'block';
+      closeAdminMenu(); hideInstruction();
+    }
+
+    function openEditMode(){
+      pendingOperation = 'edit';
+      closeAdminMenu();
+      showInstruction('Нажмите на категорию для редактирования');
+      renderCategories();
+    }
+
+    function startEditCategory(i){
+      editIndex = i;
+      const cat = categories[i];
+      document.getElementById('catTitle').value = cat.title;
+      document.getElementById('catSlug').value  = cat.slug;
+      document.getElementById('catDesc').value  = cat.desc;
+      document.getElementById('catImg').value   = cat.img;
+      document.getElementById('formTitle').textContent = 'Редактировать категорию';
+      document.getElementById('adminForm').style.display = 'block';
+      hideInstruction(); pendingOperation = null;
+    }
+
+    function openDeleteMode(){
+      pendingOperation = 'delete';
+      closeAdminMenu();
+      showInstruction('Нажмите на категорию для удаления');
+      renderCategories();
+    }
+
+    function performDeleteCategory(i){
+      if(confirm(`Удалить категорию «${categories[i].title}»?`)){
+        categories.splice(i,1);
+        localStorage.setItem('categories', JSON.stringify(categories));
+        alert('Категория удалена');
+        renderCategories();
+      }
+      hideInstruction(); pendingOperation = null;
+    }
+
+    function saveCategory(){
+      const t = document.getElementById('catTitle').value.trim();
+      const s = document.getElementById('catSlug').value.trim();
+      const d = document.getElementById('catDesc').value.trim();
+      const i = document.getElementById('catImg').value.trim();
+      if(!t||!s||!i) return alert('Заполните все обязательные поля');
+      const entry = { title:t, slug:s, desc:d, img:i };
+      if(editIndex===null){
+        categories.push(entry);
+        alert('Категория добавлена');
+      } else {
+        categories[editIndex] = entry;
+        alert('Категория изменена');
+        editIndex = null;
+      }
+      localStorage.setItem('categories', JSON.stringify(categories));
+      renderCategories(); closeAdminForm();
+    }
+
+    function closeAdminForm(){
+      document.getElementById('adminForm').style.display = 'none';
+      pendingOperation = null; hideInstruction();
+    }
+
+    function clearForm(){
+      ['catTitle','catSlug','catDesc','catImg'].forEach(id=>
+        document.getElementById(id).value = ''
+      );
+    }
+
+    function showInstruction(txt){
+      const ins = document.getElementById('instruction');
+      ins.textContent = txt; ins.style.display = 'block';
+    }
+    function hideInstruction(){
+      document.getElementById('instruction').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', renderCategories);
+  </script>
+</body>
+</html>
+ 
